@@ -1,7 +1,6 @@
 import React from 'react';
 import ImageDropzone from './ImageDropzone';
 import { EyeIcon } from './icons/EyeIcon';
-import { HistoryIcon } from './icons/HistoryIcon';
 
 interface UploadScreenProps {
   onImageSelect: (file: File) => void;
@@ -12,14 +11,9 @@ interface UploadScreenProps {
 const UploadScreen: React.FC<UploadScreenProps> = ({ onImageSelect, onAnalyze, image }) => {
   return (
     <div className="flex flex-col items-center justify-center text-center max-w-2xl mx-auto">
-        <div className="relative w-full">
-            <button className="absolute top-0 right-0 text-brand-text-light hover:text-brand-text-heading transition-colors" aria-label="Reset history">
-                <HistoryIcon className="w-6 h-6" />
-            </button>
-            <div className="flex items-center justify-center gap-3 mb-4">
-                <EyeIcon className="w-8 h-8 text-brand-accent" />
-                <h2 className="text-2xl sm:text-3xl font-bold text-brand-text-heading">AI Retinal Disease Screening</h2>
-            </div>
+        <div className="flex items-center justify-center gap-3 mb-4">
+            <EyeIcon className="w-8 h-8 text-brand-accent" />
+            <h2 className="text-2xl sm:text-3xl font-bold text-brand-text-heading">AI Retinal Disease Screening</h2>
         </div>
 
         <p className="text-brand-text-light mb-8 max-w-xl">

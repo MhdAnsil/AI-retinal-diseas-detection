@@ -13,38 +13,47 @@ const fileToGenerativePart = async (file: File) => {
   };
 };
 
-// FIX: Replaced mock function with a real Gemini API call for image analysis.
-// This provides a real-world implementation instead of a hardcoded response.
 const ai = new GoogleGenAI({apiKey: process.env.API_KEY});
 
-const prompt = `Analyze this retinal image for signs of Diabetic Retinopathy, Glaucoma, and Age-Related Macular Degeneration (AMD). 
-Provide the detected condition, severity stage, confidence score (0-100 as a number), an analysis explanation including a summary and a note, and an array of general suggestions for the user. 
-It is crucial to understand this is an initial screening finding, not a definitive diagnosis. The analysis explanation should reflect this.
-The note in the analysis explanation should be: "Note: The highlighted areas on the image indicate regions of interest identified by the AI model."
-One of the general suggestions must be to schedule a comprehensive eye examination with an ophthalmologist.
-Return the response in JSON format.`;
+const prompt = `You are an AI assistant specialized in analyzing retinal images.
+First, determine if the provided image is a retinal scan.
+Second, assess the quality of the image for analysis (either 'Good' or 'Poor').
+
+If the image is NOT a retinal scan OR the quality is 'Poor', do not proceed with disease analysis.
+
+If and only if the image is a 'Good' quality retinal scan, then analyze it for signs of Diabetic Retinopathy, Glaucoma, and Age-Related Macular Degeneration (AMD). 
+Provide the most likely detected condition, its severity stage, and your confidence score (0-100 as a number).
+Provide a concise analysis explanation including a summary and a note.
+Finally, provide an array of general suggestions for the user.
+
+It is crucial that your response emphasizes this is an initial screening, not a definitive diagnosis.
+The note in the analysis explanation must always be: "Note: The highlighted areas on the image indicate regions of interest identified by the AI model."
+One of the general suggestions must be to "Schedule a comprehensive eye examination with an ophthalmologist."
+
+Return the entire response in the specified JSON format.`;
 
 const responseSchema = {
   type: Type.OBJECT,
   properties: {
-    detectedCondition: { type: Type.STRING, description: "The most likely detected condition." },
-    severityStage: { type: Type.STRING, description: "The severity of the condition (e.g., Mild, Moderate, Severe)." },
-    confidence: { type: Type.NUMBER, description: "The confidence score of the detection, from 0 to 100." },
+    isRetinalImage: { type: Type.BOOLEAN, description: "True if the image is a retinal scan, otherwise false." },
+    imageQuality: { type: Type.STRING, description: "The quality of the image ('Good', 'Poor', or 'N/A')." },
+    detectedCondition: { type: Type.STRING, description: "The most likely detected condition. (Optional)" },
+    severityStage: { type: Type.STRING, description: "The severity of the condition, e.g., 'Mild', 'Moderate'. (Optional)" },
+    confidence: { type: Type.NUMBER, description: "The confidence score of the detection, 0 to 100. (Optional)" },
     analysisExplanation: {
         type: Type.OBJECT,
         properties: {
-            summary: { type: Type.STRING, description: "A summary of the analysis findings." },
-            note: { type: Type.STRING, description: "A disclaimer note for the user." },
+            summary: { type: Type.STRING, description: "A summary of the analysis findings. (Optional)" },
+            note: { type: Type.STRING, description: "A disclaimer note for the user. (Optional)" },
         },
-        required: ['summary', 'note']
     },
     generalSuggestions: {
         type: Type.ARRAY,
         items: { type: Type.STRING },
-        description: "An array of suggestions for the user."
+        description: "An array of suggestions for the user. (Optional)"
     }
   },
-  required: ['detectedCondition', 'severityStage', 'confidence', 'analysisExplanation', 'generalSuggestions']
+  required: ['isRetinalImage', 'imageQuality']
 };
 
 export async function analyzeRetinaImage(imageFile: File): Promise<AnalysisResult> {
@@ -61,11 +70,11 @@ export async function analyzeRetinaImage(imageFile: File): Promise<AnalysisResul
     config: {
       responseMimeType: "application/json",
       responseSchema: responseSchema,
+      temperature: 0.1, // Lower temperature for more deterministic results
     }
   });
   
   const jsonStr = response.text.trim();
-  // In a real application, you'd want to add more robust error handling for JSON.parse
   const result: AnalysisResult = JSON.parse(jsonStr);
   return result;
 }
