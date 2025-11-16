@@ -1,0 +1,5 @@
+{
+  "name": "Drive Query with Gemini",
+  "description": "An application that allows users to connect to their Google Drive, select files, and ask questions about their content using the Gemini API for intelligent answers.",
+  "requestFramePermissions": []
+}
