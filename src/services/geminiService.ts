@@ -13,6 +13,7 @@ const fileToGenerativePart = async (file: File) => {
   };
 };
 
+// FIX: The API key must be obtained from `process.env.API_KEY` as per the guidelines.
 const ai = new GoogleGenAI({apiKey: process.env.API_KEY});
 
 const prompt = `You are an AI assistant specialized in analyzing retinal images.

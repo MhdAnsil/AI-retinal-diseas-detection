@@ -4,39 +4,21 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AI Retinal Disease Screening</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            colors: {
-              'brand-dark': '#0f172a', // slate-900
-              'brand-surface': '#1e293b', // slate-800
-              'brand-border': '#334155', // slate-700
-              'brand-text-light': '#cbd5e1', // slate-300
-              'brand-text-heading': '#f1f5f9', // slate-100
-              'brand-accent': '#3b82f6', // blue-500
-              'brand-accent-hover': '#2563eb', // blue-600
-              'brand-yellow': '#facc15', // yellow-400
-              'brand-orange': '#f97316', // orange-500
-            },
-          },
-        },
-      }
-    </script>
   <script type="importmap">
 {
   "imports": {
-    "react/": "https://aistudiocdn.com/react@^19.2.0/",
     "react": "https://aistudiocdn.com/react@^19.2.0",
     "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.29.1"
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.29.1",
+    "vite": "https://aistudiocdn.com/vite@^7.2.2",
+    "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.1.1"
   }
 }
 </script>
 </head>
-  <body class="bg-brand-dark text-brand-text-light antialiased">
+  <body>
     <div id="root"></div>
-    <script type="module" src="/index.tsx"></script>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
