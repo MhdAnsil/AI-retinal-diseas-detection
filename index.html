@@ -1,29 +1,24 @@
-
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Drive Query with Gemini</title>
+    <title>AI Retinal Disease Screening</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
         theme: {
           extend: {
             colors: {
-              'gemini-blue': '#1a73e8',
-              'gemini-dark-blue': '#0b57d0',
-              'gemini-grey': {
-                100: '#f8f9fa',
-                200: '#e9eaea',
-                300: '#dadce0',
-                400: '#bdc1c6',
-                500: '#9aa0a6',
-                600: '#80868b',
-                700: '#5f6368',
-                800: '#3c4043',
-                900: '#202124',
-              },
+              'brand-dark': '#0f172a', // slate-900
+              'brand-surface': '#1e293b', // slate-800
+              'brand-border': '#334155', // slate-700
+              'brand-text-light': '#cbd5e1', // slate-300
+              'brand-text-heading': '#f1f5f9', // slate-100
+              'brand-accent': '#3b82f6', // blue-500
+              'brand-accent-hover': '#2563eb', // blue-600
+              'brand-yellow': '#facc15', // yellow-400
+              'brand-orange': '#f97316', // orange-500
             },
           },
         },
@@ -40,7 +35,7 @@
 }
 </script>
 </head>
-  <body class="bg-gemini-grey-100">
+  <body class="bg-brand-dark text-brand-text-light antialiased">
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
   </body>

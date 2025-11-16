@@ -1,148 +1,93 @@
-
-import React, { useState, useCallback, useMemo } from 'react';
-import { DriveFile } from './types';
-import { queryWithFiles } from './services/geminiService';
-import { DriveConnect } from './components/DriveConnect';
-import { FileList } from './components/FileList';
-import { QueryForm } from './components/QueryForm';
-import { ResponseDisplay } from './components/ResponseDisplay';
-import { Logo } from './components/icons/Logo';
-
-// This is a mock implementation based on the app's context.
-// In a real environment, this would be provided.
-if (typeof window.aistudio === 'undefined') {
-  // Fix: Add missing properties to the mock aistudio object to conform to the AIStudio interface.
-  window.aistudio = {
-    getDriveFiles: () => new Promise((resolve) => {
-      setTimeout(() => {
-        resolve([
-          { id: '1', name: 'Project Proposal.docx', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', modifiedTime: '2024-08-15T10:30:00Z', content: 'Project Gemini aims to build a new AI-powered search engine. It will leverage large language models to provide contextual answers. The budget is $5 million.' },
-          { id: '2', name: 'Q3 Financials.xlsx', mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', modifiedTime: '2024-08-14T14:00:00Z', content: 'Q3 Revenue: $2.5M, Profit: $800k. Key drivers were new product launches in the enterprise sector.' },
-          { id: '3', name: 'Marketing Strategy.pdf', mimeType: 'application/pdf', modifiedTime: '2024-08-12T09:45:00Z', content: 'Our Q4 marketing strategy will focus on digital channels, specifically social media campaigns and influencer partnerships. We will target the 18-35 demographic.' },
-          { id: '4', name: 'Meeting Notes - Aug 10.txt', mimeType: 'text/plain', modifiedTime: '2024-08-10T16:20:00Z', content: 'Discussion points: Finalize project proposal by EOW. Marketing to provide new creatives for the upcoming campaign. Financials look strong for Q3.' },
-        ]);
-      }, 1500);
-    }),
-    getHostUrl: () => '',
-    hasSelectedApiKey: () => Promise.resolve(true),
-    openSelectKey: () => Promise.resolve(undefined),
-    getModelQuota: () => Promise.resolve({}),
-  };
-}
+import React, { useState, useCallback } from 'react';
+import { AnalysisResult } from './types';
+import { analyzeRetinaImage } from './services/geminiService';
+import UploadScreen from './components/UploadScreen';
+import ResultScreen from './components/ResultScreen';
+import { SpinnerIcon } from './components/icons/SpinnerIcon';
 
 const App: React.FC = () => {
-  const [isDriveConnected, setIsDriveConnected] = useState<boolean>(false);
-  const [driveFiles, setDriveFiles] = useState<DriveFile[]>([]);
-  const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
-  const [query, setQuery] = useState<string>('');
-  const [isLoadingFiles, setIsLoadingFiles] = useState<boolean>(false);
-  const [isGenerating, setIsGenerating] = useState<boolean>(false);
-  const [apiResponse, setApiResponse] = useState<string>('');
+  const [image, setImage] = useState<{ file: File, previewUrl: string } | null>(null);
+  const [result, setResult] = useState<AnalysisResult | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleConnectDrive = useCallback(async () => {
-    setIsLoadingFiles(true);
-    setError(null);
-    try {
-      const files = await window.aistudio.getDriveFiles();
-      setDriveFiles(files);
-      setIsDriveConnected(true);
-    } catch (err) {
-      setError('Failed to connect to Google Drive. Please try again.');
-      console.error(err);
-    } finally {
-      setIsLoadingFiles(false);
+  const handleImageSelect = useCallback((selectedFile: File) => {
+    if (selectedFile) {
+      setImage({
+        file: selectedFile,
+        previewUrl: URL.createObjectURL(selectedFile),
+      });
+      setError(null);
     }
   }, []);
 
-  const handleFileSelect = useCallback((fileId: string) => {
-    setSelectedFiles(prev => {
-      const newSelection = new Set(prev);
-      if (newSelection.has(fileId)) {
-        newSelection.delete(fileId);
-      } else {
-        newSelection.add(fileId);
-      }
-      return newSelection;
-    });
-  }, []);
+  const handleAnalyze = useCallback(async () => {
+    if (!image) return;
 
-  const handleSelectAll = useCallback(() => {
-    setSelectedFiles(new Set(driveFiles.map(f => f.id)));
-  }, [driveFiles]);
-
-  const handleDeselectAll = useCallback(() => {
-    setSelectedFiles(new Set());
-  }, []);
-  
-  const filesToQuery = useMemo(() => {
-    return driveFiles.filter(file => selectedFiles.has(file.id));
-  }, [driveFiles, selectedFiles]);
-
-
-  const handleGenerate = useCallback(async () => {
-    if (selectedFiles.size === 0 || !query.trim()) return;
-
-    setIsGenerating(true);
-    setApiResponse('');
+    setIsAnalyzing(true);
     setError(null);
+    setResult(null);
 
     try {
-      const response = await queryWithFiles(filesToQuery, query);
-      setApiResponse(response);
+      const analysisResult = await analyzeRetinaImage(image.file);
+      setResult(analysisResult);
     } catch (err: any) {
-      setError(`An error occurred: ${err.message}`);
+      setError(`An error occurred during analysis: ${err.message}`);
       console.error(err);
     } finally {
-      setIsGenerating(false);
+      setIsAnalyzing(false);
     }
-  }, [filesToQuery, query, selectedFiles.size]);
-  
+  }, [image]);
+
+  const handleReset = useCallback(() => {
+    if (image) {
+      URL.revokeObjectURL(image.previewUrl);
+    }
+    setImage(null);
+    setResult(null);
+    setError(null);
+    setIsAnalyzing(false);
+  }, [image]);
+
+  const renderContent = () => {
+    if (isAnalyzing) {
+        return (
+            <div className="flex flex-col items-center justify-center h-full gap-4">
+                <SpinnerIcon className="w-12 h-12 text-brand-accent"/>
+                <p className="text-lg text-brand-text-light">Analyzing image, please wait...</p>
+            </div>
+        );
+    }
+
+    if (result && image) {
+      return <ResultScreen result={result} imagePreviewUrl={image.previewUrl} onReset={handleReset} />;
+    }
+
+    return <UploadScreen onImageSelect={handleImageSelect} onAnalyze={handleAnalyze} image={image} />;
+  };
+
   return (
-    <div className="min-h-screen bg-gemini-grey-100 text-gemini-grey-900 font-sans">
-      <header className="bg-white border-b border-gemini-grey-300 p-4 sticky top-0 z-10">
-        <div className="container mx-auto flex items-center gap-4">
-          <Logo className="h-8 w-auto" />
-          <h1 className="text-xl font-medium text-gemini-grey-800">Drive Query</h1>
+    <div className="min-h-screen bg-brand-dark text-brand-text-light font-sans flex flex-col">
+      <header className="bg-brand-dark border-b border-brand-border/50 p-4 sticky top-0 z-10 w-full">
+        <div className="container mx-auto flex items-center justify-between">
+          <h1 className="text-lg font-medium text-brand-text-heading">AI Retinal Disease Screening</h1>
+          <div className="flex items-center gap-4 text-sm">
+            <span>Device</span>
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm0 0a8.949 8.949 0 0 0 4.95-1.755l-4.135-4.135a2.25 2.25 0 0 1-3.182-3.182L4.8 16.05A8.949 8.949 0 0 0 12 21Zm0-18a8.949 8.949 0 0 1 4.135 1.282l-4.288 4.288a2.25 2.25 0 0 0-3.182 3.182L3.25 13.05A8.949 8.949 0 0 1 12 3Z" />
+            </svg>
+            <button onClick={handleReset} aria-label="Refresh application">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 11.664 0l3.18-3.185m-3.18-3.182-3.182-3.182a8.25 8.25 0 0 0-11.664 0l-3.18 3.185" />
+                </svg>
+            </button>
+
+          </div>
         </div>
       </header>
-
-      <main className="container mx-auto p-4 md:p-8">
-        {!isDriveConnected ? (
-          <DriveConnect onConnect={handleConnectDrive} isLoading={isLoadingFiles} />
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div className="flex flex-col gap-4">
-              <h2 className="text-2xl font-semibold text-gemini-grey-800">Select Files</h2>
-              <div className="bg-white rounded-lg border border-gemini-grey-300 shadow-sm overflow-hidden flex-grow">
-                 <FileList
-                  files={driveFiles}
-                  selectedFiles={selectedFiles}
-                  onFileSelect={handleFileSelect}
-                  onSelectAll={handleSelectAll}
-                  onDeselectAll={handleDeselectAll}
-                />
-              </div>
-            </div>
-            <div className="flex flex-col gap-4">
-               <h2 className="text-2xl font-semibold text-gemini-grey-800">Ask a Question</h2>
-              <div className="bg-white p-6 rounded-lg border border-gemini-grey-300 shadow-sm flex-grow flex flex-col gap-4">
-                <QueryForm
-                  query={query}
-                  setQuery={setQuery}
-                  onSubmit={handleGenerate}
-                  isGenerating={isGenerating}
-                  hasSelectedFiles={selectedFiles.size > 0}
-                />
-                <ResponseDisplay 
-                  response={apiResponse}
-                  isGenerating={isGenerating}
-                  error={error}
-                />
-              </div>
-            </div>
-          </div>
-        )}
+      <main className="container mx-auto p-4 md:p-8 flex-grow">
+          {renderContent()}
+          {error && <div className="mt-4 text-center text-red-400 bg-red-900/50 p-3 rounded-md">{error}</div>}
       </main>
     </div>
   );
